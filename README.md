@@ -6,7 +6,7 @@ Santa Sleighs
 - Aiden - Player Controls & First Person POV
 - Jesus - Environment Modeling
 - John  - Enemy AI
-- Amina - Environment Modeling
+- Amina - UI
 - Caleb - Modeling & Animation
 
 ## CURRENT GOAL
