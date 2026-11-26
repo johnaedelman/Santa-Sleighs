@@ -1,6 +1,10 @@
+using UnityEditor.Toolbars;
 using UnityEngine;
 
-
+//MAIN TODO'S:
+//TODO: TEST FOR WHEN THE PLAYER RUNS AWAY AND ALL ELVES LOSE SIGHT OF PLAYER
+//TODO: IMPLEMENT PATROL SYSTEM
+//TODO: MAKE ELVES AWARE OF TREES AND MOVE AROUND THEM
 public enum AlertStage
 {
     Searching,
@@ -14,6 +18,10 @@ public class ElfManager : MonoBehaviour
     private bool hasLineOfSight;
 
     private float moveSpeed = 5f;
+    public float jumpEmFov = 30; //The radius within which the elf searches for other elves before attacking
+
+    public static bool playerFound;
+    
 
     [SerializeField] private GameObject player;
 
@@ -26,7 +34,7 @@ public class ElfManager : MonoBehaviour
 
     public void Update()
     {
-        if (alertStage == AlertStage.Alerted)
+        if (alertStage == AlertStage.Alerted || playerFound == true)
         {
             //Turns towards Player when spotted
             Vector3 direction = player.transform.position - transform.position;
@@ -36,12 +44,24 @@ public class ElfManager : MonoBehaviour
                 Quaternion lookrotation = Quaternion.LookRotation(direction);
                 transform.rotation = Quaternion.Euler(0f, lookrotation.eulerAngles.y, 0f);
             }
-            //Moves towards player until within a radius of 10 
-            //TODO: Add an "Elf Count" using targetsInFov Collider[] to attack when a certain number of elves are nearby
-            if (Vector3.Distance(transform.position, player.transform.position) > 10)
+            //Counts the # of elves within a radius, if number is 5 or more then instead of waiting at a distance of 10, the 5 elves attack all at once
+            Collider[] elfGang = Physics.OverlapSphere(transform.position, jumpEmFov);
+            int elfGangNum = 0;
+            foreach (Collider c in elfGang)
+            {
+                if (c.CompareTag("Elf"))
+                {
+                    elfGangNum++;
+                }
+            }
+            if (Vector3.Distance(transform.position, player.transform.position) > 10 && elfGangNum < 5)
                 transform.position = Vector3.MoveTowards(transform.position, player.transform.position, moveSpeed * Time.deltaTime);
+            else if (elfGangNum >= 5)
+            {
+                transform.position = Vector3.MoveTowards(transform.position, player.transform.position, moveSpeed * Time.deltaTime);
+            }
         }
-    bool playerInFov = false;
+        bool playerInFov = false;
         Collider[] targetsInFov = Physics.OverlapSphere(transform.position, fov);  //List of objects in Elf's FOV 360 degrees
         foreach (Collider c in targetsInFov)
         {
@@ -72,11 +92,17 @@ public class ElfManager : MonoBehaviour
         {
             case AlertStage.Searching:
                 if (hasLineOfSight)
+                {
                     alertStage = AlertStage.Alerted;
+                    playerFound = true;
+                }
                 break;
             case AlertStage.Alerted:
                 if (!hasLineOfSight)
+                {
                     alertStage = AlertStage.Searching;
+                    playerFound = false;
+                }
                 break;
         }
     }
